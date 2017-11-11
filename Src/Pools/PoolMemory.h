@@ -15,9 +15,11 @@ public:
     void* allocAlign(intp align, uint32 size);
 	void dealloc(intp pointer);
 private:
+	void init(uint32 size);
     void *mem;
     void *curMem;
 	void *maxMem;
 	char* occupiedMem;
+	char* occupiedMaxMem
 };
 #endif
