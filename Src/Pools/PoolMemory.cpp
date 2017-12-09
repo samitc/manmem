@@ -6,61 +6,86 @@
 #define getIsFree(val)	((val)&FREE_VALUE)
 #define setNotFree(val) (val)&=(!FREE_VALUE)
 #define setFree(val) (val)|=FREE_VALUE
+#define compactMemory(mem)\
+ while (getIsFree(*mem) == FREE_VALUE)\
+	{\
+	mem++;\
+	mem += *((uint32*)(mem)) + sizeof(uint32);\
+	}
+void compactAll(void *startMem, void *endMem)
+{
+	char *curMem = (char*)startMem;
+	while (curMem < endMem)
+	{
+		if (getIsFree(*curMem) == FREE_VALUE)
+		{
+			char *tempMem = curMem;
+			compactMemory(curMem);
+			if (curMem>endMem)
+			{
+				curMem = (char*)endMem;
+			}
+			*((uint32*)(tempMem + 1)) = curMem - (char*)tempMem - sizeof(char) - sizeof(uint32);
+		}
+		else
+		{
+			curMem += sizeof(char) + sizeof(uint32) + *((uint32*)(curMem + 1));
+		}
+	}
+}
 PoolMemory::PoolMemory():PoolMemory(1024*1024*10)
 {
 }
-PoolMemory::PoolMemory(uint32 size)
+PoolMemory::PoolMemory(uint32 size) : PoolMemory(size, false)
 {
+}
+PoolMemory::PoolMemory(uint32 size, bool isMaxPoolSize)
+{
+	const int END_PADDING_STOP_DEALLOC = sizeof(uint32) + sizeof(char) + 1;
+	const int START_PADDING_FOR_POOL_SIZE = sizeof(uint32) + sizeof(char);
+	if (isMaxPoolSize)
+	{
+		size -= END_PADDING_STOP_DEALLOC;
+	}
+	else
+	{
+		size += START_PADDING_FOR_POOL_SIZE;
+	}
 	if (size>MAX_POOL_SIZE)
 	{
 		//TODO:
 	}
 	else
 	{
-		mem = malloc(size + sizeof(uint32) + sizeof(char)+1);
+		mem = malloc(size + END_PADDING_STOP_DEALLOC);
 		maxMem = (char*)mem + size;
-		char* endMemBarriar = (char*)maxMem + sizeof(uint32) + sizeof(char);
-		resetFlag(*endMemBarriar);
-		setNotFree(*endMemBarriar);
+#if !defined(DEBUG_BUILD)
+		char* endMemBarriar;
+#endif
+		endMemBarriar = (char*)maxMem + sizeof(uint32) + sizeof(char);
+		for (char * i = (char*)maxMem; i <= endMemBarriar; i++)
+		{
+			resetFlag(*i);
+			setNotFree(*i);
+		}
 		resetFlag(*((char*)(mem)));
 		setFree(*((char*)(mem)));
-		*((uint32*)((char*)(mem) + 1)) = size;
+		*((uint32*)((char*)(mem)+1)) = size - START_PADDING_FOR_POOL_SIZE;
 	}
 }
 PoolMemory::~PoolMemory()
 {
+	free(mem);
 }
 void * PoolMemory::alloc(uint32 size)
 {
-	char* curMem = (char*)mem;
-	uint32 curSize;
-	while (true)
+	void *mem = pAlloc(size);
+	if (mem==nullptr)
 	{
-		int isFree = getIsFree(*curMem);
-		curSize = *((uint32*)(curMem + 1));
-		if (isFree == FREE_VALUE&&curSize > size)
-		{
-			break;
-		}
-		else
-		{
-			curMem += curSize + sizeof(uint32) + sizeof(char);
-			if (curMem > maxMem)
-			{
-				return nullptr;
-			}
-		}
+		compactAll(this->mem, maxMem);
+		mem = pAlloc(size);
 	}
-	setNotFree(*curMem);
-	curMem++;
-	*((uint32*)(curMem)) = size;
-	curMem += sizeof(uint32);
-	char *nextMem = curMem + size;
-	resetFlag(*nextMem);
-	setFree(*nextMem);
-	nextMem++;
-	*((uint32*)(nextMem)) = curSize - size - sizeof(uint32) - sizeof(char);
-	return curMem;
+	return mem;
 }
 void * PoolMemory::allocAlign(intp align, uint32 size)
 {
@@ -77,10 +102,53 @@ void PoolMemory::dealloc(void* pointer)
 	setFree(*delPointer);
 	delPointer++;
 	char *finalMem = delPointer + *((uint32*)(delPointer)) + sizeof(uint32);
-	while (getIsFree(*finalMem) == FREE_VALUE)
+	compactMemory(finalMem);
+	if (finalMem>maxMem)
 	{
-		finalMem++;
-		finalMem += *((uint32*)(finalMem)) + sizeof(uint32);
+		finalMem = (char*)maxMem;
 	}
 	*((uint32*)(delPointer)) = finalMem - (char*)pointer;
+}
+void * PoolMemory::pAlloc(uint32 size)
+{
+	char* curMem = (char*)mem;
+	uint32 curSize;
+	while (true)
+	{
+		int isFree = getIsFree(*curMem);
+		curSize = *((uint32*)(curMem + 1));
+		if (isFree == FREE_VALUE&&curSize >= size)
+		{
+			break;
+		}
+		else
+		{
+			curMem += curSize + sizeof(uint32) + sizeof(char);
+			if (curMem > maxMem)
+			{
+				return nullptr;
+			}
+		}
+	}
+	if (curMem + size + sizeof(uint32) + sizeof(char) > maxMem)
+	{
+		return nullptr;
+	}
+	setNotFree(*curMem);
+	if (curSize < size + sizeof(uint32) + sizeof(char))
+	{
+		return curMem + sizeof(uint32) + sizeof(char);
+	}
+	curMem++;
+	*((uint32*)(curMem)) = size;
+	curMem += sizeof(uint32);
+	char *nextMem = curMem + size;
+	if (nextMem < maxMem)
+	{
+		resetFlag(*nextMem);
+		setFree(*nextMem);
+		nextMem++;
+		*((uint32*)(nextMem)) = curSize - (size)-sizeof(uint32) - sizeof(char);
+	}
+	return curMem;
 }
