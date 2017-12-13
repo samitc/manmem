@@ -4,10 +4,17 @@
 #include <chrono>
 extern std::ofstream perfFile;
 void writePerformance(const char* funcName,double time,int iteration);
-#define startPerformance auto \
-    startTestMTimePerf = std::chrono::high_resolution_clock::now();
-#define endPerformance(funcName,iteration) \
+#define startPerformance \
     auto endTestMTimePerf = std::chrono::high_resolution_clock::now();\
-    std::chrono::duration<double> timePerfdiff = endTestMTimePerf-startTestMTimePerf;\
+    auto startTestMTimePerf = endTestMTimePerf;\
+    std::chrono::duration<double> timePerfdiff = std::chrono::duration<double>(0);
+#define resumePerformance \
+    startTestMTimePerf = std::chrono::high_resolution_clock::now();
+#define puasePerformance \
+    endTestMTimePerf = std::chrono::high_resolution_clock::now();\
+    timePerfdiff += endTestMTimePerf-startTestMTimePerf;\
+    startTestMTimePerf=endTestMTimePerf;
+#define endPerformance(funcName,iteration) \
+    puasePerformance \
     writePerformance(funcName,timePerfdiff.count(),iteration);
 #endif
