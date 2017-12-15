@@ -230,6 +230,19 @@ TEST(PoolGeneralTest, allocDeallocAllocFull)
 	ASSERT_EQ(nullptr, pm.alloc(POOL_SIZE));
 	pm.dealloc(p1);
 }
+TEST(PoolGeneralTest, smallPool)
+{
+    const uint32 POOL_SIZE = 5;
+    PoolMemory pm{ POOL_SIZE };
+    const int ALLOC_SIZE = 1000;
+    ASSERT_EQ(nullptr, pm.alloc(ALLOC_SIZE));
+    pm.dealloc(nullptr);
+    ASSERT_EQ(nullptr, pm.alloc(ALLOC_SIZE));
+    pm.dealloc(nullptr);
+    void *p = pm.alloc(POOL_SIZE);
+    ASSERT_NE(nullptr, p);
+    pm.dealloc(p);
+}
 TEST(PoolGeneralTest, fourAllOrder)
 {
     const uint32 POOL_SIZE = 1000;
