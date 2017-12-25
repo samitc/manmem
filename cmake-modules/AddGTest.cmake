@@ -43,7 +43,7 @@ else (NOT GIT_FOUND)
 
     ExternalProject_Add(gtest
             GIT_REPOSITORY https://github.com/google/googletest.git
-			GIT_TAG release-1.8.0
+			GIT_TAG 5490beb
             TIMEOUT 10
             PREFIX "${GTEST_PREFIX}"
             CMAKE_ARGS "${GTEST_CMAKE_ARGS}"

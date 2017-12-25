@@ -1,4 +1,4 @@
-
+#include <iostream>
 #include "gtest/gtest.h"
 #include "../../Src/Pools/PoolMemory.h"
 #include "Performance.h"
@@ -17,6 +17,7 @@ TEST(PoolPerformanceTest, fullTest)
     startPerformance;
     for (int i = 0; i < ITERATION; i++) 
     {
+		std::cout << "iteration number:" << i << std::endl;
         int count = 0;
         do {
             p[count]=pm.alloc(ALLOC_SIZE);
@@ -43,6 +44,7 @@ TEST(PoolPerformanceTest, allocTest)
     startPerformance;
     for (int i = 0; i < ITERATION; i++) 
     {
+		std::cout << "iteration number:" << i << std::endl;
         resumePerformance;
         int count = 0;
         do {
@@ -71,6 +73,7 @@ TEST(PoolPerformanceTest, deallocTest)
     startPerformance;
     for (int i = 0; i < ITERATION; i++) 
     {
+		std::cout << "iteration number:" << i << std::endl;
         int count = 0;
         do {
             p[count]=pm.alloc(ALLOC_SIZE);

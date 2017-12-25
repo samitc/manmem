@@ -1,9 +1,8 @@
-
 #include "gtest/gtest.h"
 #include "../../Src/Pools/PoolMemory.h"
 void testPointer(void *p,int val,uint32 size)
 {
-    char tempData[size];
+	char *tempData = (char*)alloca(size);
     memset(tempData,val,size);
     ASSERT_EQ(0,memcmp(tempData,p,size));
 }
