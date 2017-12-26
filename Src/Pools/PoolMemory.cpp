@@ -65,8 +65,12 @@ PoolMemory::PoolMemory(uint32 size, bool isMaxPoolSize)
 		endMemBarriar = (char*)maxMem + sizeof(uint32) + sizeof(char);
 		for (char * i = (char*)maxMem; i <= endMemBarriar; i++)
 		{
+#if defined(_MSC_VER) // TODO: need due bug in vs compiler in release build. remove when fix.
+			*i = 0;
+#else
 			resetFlag(*i);
 			setNotFree(*i);
+#endif
 		}
 		resetFlag(*((char*)(mem)));
 		setFree(*((char*)(mem)));

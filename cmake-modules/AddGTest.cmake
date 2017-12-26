@@ -22,7 +22,8 @@ set(GTEST_CMAKE_ARGS
         "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
         "-Dgtest_force_shared_crt=ON"
         "-Dgtest_disable_pthreads:BOOL=${DISABLE_PTHREADS}"
-        "-DBUILD_GTEST=ON")
+        "-DBUILD_GTEST=ON"
+		"-DCMAKE_DEBUG_POSTFIX=")
 set(GTEST_RELEASE_LIB_DIR "")
 set(GTEST_DEBUGLIB_DIR "")
 if (MSVC)
@@ -43,7 +44,6 @@ else (NOT GIT_FOUND)
 
     ExternalProject_Add(gtest
             GIT_REPOSITORY https://github.com/google/googletest.git
-			GIT_TAG 5490beb
             TIMEOUT 10
             PREFIX "${GTEST_PREFIX}"
             CMAKE_ARGS "${GTEST_CMAKE_ARGS}"
