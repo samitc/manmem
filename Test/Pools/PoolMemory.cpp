@@ -28,7 +28,7 @@ void testPointers(void **p,int numOfPointers,uint32 *sizes)
 }
 void testPointers(void **p,int numOfPointers,uint32 size)
 {
-    uint32 *sizes=new uint32[numOfPointers];
+    uint32 *sizes=(uint32*)alloca(numOfPointers*sizeof(uint32));
     for (int i = 0; i < numOfPointers; i++)
     {
         sizes[i]=size;
