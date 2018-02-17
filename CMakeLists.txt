@@ -5,12 +5,15 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 set(SOURCE_FILES
         Src/Pools/ShortPoolMemory.cpp
         Src/Pools/PoolMemory.cpp
+		Src/Pools/FixPoolMemory.cpp
         Src/Pools/ShortPoolMemory.h
         Src/Pools/PoolMemory.h
+		Src/Pools/FixPoolMemory.h
         GeneralTypes.h)
 set(TEST_SOURCE_FILES
 		Test/Main.cpp
-		Test/Pools/PoolMemory.cpp
+		Test/Pools/GeneralPoolMemory.cpp
+		Test/Pools/FixPoolMemory.cpp
 )
 set(PERFORMANCE_SOURCE_FILES
         Test/Main.cpp

@@ -1,12 +1,18 @@
-#include "gtest/gtest.h"
-#include "../../Src/Pools/PoolMemory.h"
-void testPointer(void *p,int val,uint32 size)
+#include "gtest/gtest.h" 
+#if IS_FIX_SIZE==1
+#define CREATE_POOL_DEF(name,fixSize)	POOL_NAME name{fixSize}
+#define CREATE_POOL(name,size,fixSize) POOL_NAME name{size,fixSize}
+#else
+#define CREATE_POOL(name,size,fixSize) POOL_NAME name{size}
+#define CREATE_POOL_DEF(name,fixSize)	CREATE_POOL(name,,fixSize)
+#endif
+static void testPointer(void *p,int val,uint32 size)
 {
 	char *tempData = (char*)alloca(size);
     memset(tempData,val,size);
     ASSERT_EQ(0,memcmp(tempData,p,size));
 }
-void testPointers(void **p,int numOfPointers,uint32 *sizes)
+static void testPointers(void **p,int numOfPointers,uint32 *sizes)
 {
     const int VAL=5;
     for(int i=0;i<numOfPointers;i++)
@@ -26,7 +32,7 @@ void testPointers(void **p,int numOfPointers,uint32 *sizes)
        testPointer(p[i],VAL+i,sizes[i]);
     }
 }
-void testPointers(void **p,int numOfPointers,uint32 size)
+static void testPointers(void **p,int numOfPointers,uint32 size)
 {
     uint32 *sizes=(uint32*)alloca(numOfPointers*sizeof(uint32));
     for (int i = 0; i < numOfPointers; i++)
@@ -35,7 +41,7 @@ void testPointers(void **p,int numOfPointers,uint32 size)
     }
     testPointers(p,numOfPointers,sizes);
 }
-void testPointersMaxSize(void **p,int maxSize, uint32 *sizes)
+static void testPointersMaxSize(void **p,int maxSize, uint32 *sizes)
 {
     int count = 0;
     for (; count < maxSize; count++)
@@ -47,7 +53,7 @@ void testPointersMaxSize(void **p,int maxSize, uint32 *sizes)
     }
     testPointers(p,count,sizes);
 }
-void testPointersMaxSize(void **p,int numOfPointers,uint32 size)
+static void testPointersMaxSize(void **p,int numOfPointers,uint32 size)
 {
     uint32 *sizes=new uint32[numOfPointers];
     for (int i = 0; i < numOfPointers; i++)
@@ -56,80 +62,90 @@ void testPointersMaxSize(void **p,int numOfPointers,uint32 size)
     }
     testPointersMaxSize(p,numOfPointers,sizes);
 }
-TEST(PoolGeneralTest, generalTest)
+TEST(TEST_NAME, generalTest)
 {
-	PoolMemory pm{};
+	CREATE_POOL_DEF(pm, 5);
 	void * p = pm.alloc(5);
 	ASSERT_NE(nullptr, p);
 	pm.dealloc(p);
 }
-TEST(PoolGeneralTest, sizeTest)
+TEST(TEST_NAME, sizeTest)
 {
 	const uint32 POOL_SIZE = 5;
-	PoolMemory pm{ POOL_SIZE };
+	CREATE_POOL(pm, POOL_SIZE, POOL_SIZE);
 	void * p = pm.alloc(POOL_SIZE);
 	ASSERT_NE(nullptr, p);
 	ASSERT_EQ(nullptr, pm.alloc(POOL_SIZE));
 }
-TEST(PoolGeneralTest, sizeBTest)
+#if IS_FIX_SIZE==0
+TEST(TEST_NAME, sizeBTest)
 {
 	const uint32 POOL_SIZE = 5;
-	PoolMemory pm{ POOL_SIZE };
+	CREATE_POOL(pm, POOL_SIZE, POOL_SIZE);
 	ASSERT_EQ(nullptr, pm.alloc(POOL_SIZE+1));
 }
 TEST(PoolGeneralTest, allocTest)
 {
 	const uint32 POOL_SIZE = 100;
-	PoolMemory pm{ POOL_SIZE };
+	CREATE_POOL(pm, POOL_SIZE, POOL_SIZE);
 	void * p = pm.alloc(POOL_SIZE);
-    testPointers(&p,1,POOL_SIZE);
+	testPointers(&p, 1, POOL_SIZE);
 	ASSERT_EQ(nullptr, pm.alloc(5));
 }
-TEST(PoolGeneralTest, multiAllocTest)
+#endif
+TEST(TEST_NAME, allocTestFix)
 {
 	const uint32 POOL_SIZE = 100;
-	const int ALLOC_SIZE = 20;
+	CREATE_POOL(pm, POOL_SIZE, POOL_SIZE);
+	void * p = pm.alloc(POOL_SIZE);
+	testPointers(&p, 1, POOL_SIZE);
+	ASSERT_EQ(nullptr, pm.alloc(POOL_SIZE));
+}
+TEST(TEST_NAME, multiAllocTest)
+{
+	const uint32 POOL_SIZE = 100;
+	const uint32 ALLOC_SIZE = 20;
 	const int ALLOC_TIMES = 3;
 	void *p[ALLOC_TIMES];
-	PoolMemory pm{ POOL_SIZE };
+	CREATE_POOL(pm, POOL_SIZE, ALLOC_SIZE);
 	for (size_t i = 0; i < ALLOC_TIMES; i++)
 	{
 		p[i] = pm.alloc(ALLOC_SIZE);
 	}
     testPointers(p,ALLOC_TIMES,ALLOC_SIZE);
 }
-TEST(PoolGeneralTest, deallocNullTest)
+TEST(TEST_NAME, deallocNullTest)
 {
-	PoolMemory pm{ };
+	CREATE_POOL_DEF(pm, );
 	pm.dealloc(nullptr);
 }
-TEST(PoolGeneralTest, deallocTest)
+TEST(TEST_NAME, deallocTest)
 {
 	const uint32 POOL_SIZE = 5;
-	PoolMemory pm{ POOL_SIZE };
+	CREATE_POOL(pm, POOL_SIZE, POOL_SIZE);
 	void * p = pm.alloc(POOL_SIZE);
     testPointers(&p,1,POOL_SIZE);
 	ASSERT_EQ(nullptr, pm.alloc(POOL_SIZE));
 	pm.dealloc(p);
 	ASSERT_NE(nullptr, pm.alloc(POOL_SIZE));
 }
-TEST(PoolGeneralTest, deallocFreeTest)
+TEST(TEST_NAME, deallocFreeTest)
 {
 	const uint32 POOL_SIZE = 6;
-	const int ALLOC_SIZE = 5;
-	PoolMemory pm{ POOL_SIZE };
+	const uint32 ALLOC_SIZE = 5;
+	CREATE_POOL(pm, POOL_SIZE, ALLOC_SIZE);
 	void * p = pm.alloc(ALLOC_SIZE);
 	testPointers(&p,1,ALLOC_SIZE);
 	ASSERT_EQ(nullptr, pm.alloc(ALLOC_SIZE));
 	pm.dealloc(p);
-	ASSERT_NE(nullptr, pm.alloc(POOL_SIZE));
+	ASSERT_NE(nullptr, pm.alloc(ALLOC_SIZE));
 }
-TEST(PoolGeneralTest, deallocFullTest)
+TEST(TEST_NAME, deallocFullTest)
 {
 	const uint32 POOL_SIZE = 20;
-	const int ALLOC_SIZE = 5;
+	const uint32 ALLOC_SIZE = 5;
 	const int ITER = 3;
-	PoolMemory pm{ POOL_SIZE };
+	CREATE_POOL(pm, POOL_SIZE, ALLOC_SIZE);
 	const int ALLOC_TIMES = POOL_SIZE / ALLOC_SIZE;
 	void *p[ALLOC_TIMES];
 	for (size_t q = 0; q < ITER; q++)
@@ -144,14 +160,15 @@ TEST(PoolGeneralTest, deallocFullTest)
 			pm.dealloc(p[i]);
 		}
 	}
-	ASSERT_NE(nullptr, pm.alloc(POOL_SIZE));
+	ASSERT_NE(nullptr, pm.alloc(ALLOC_SIZE));
 }
-TEST(PoolGeneralTest, deallocAlmostFullIntTest)
+#if IS_FIX_SIZE==0
+TEST(TEST_NAME, deallocAlmostFullIntTest)
 {
 	const uint32 POOL_SIZE = 20;
 	const int ALLOC_SIZE = 5;
 	const int ITER = 3;
-	PoolMemory pm{ POOL_SIZE };
+	CREATE_POOL(pm, POOL_SIZE, ALLOC_SIZE);
 	const int ALLOC_TIMES = POOL_SIZE / ALLOC_SIZE;
 	void *p[ALLOC_TIMES];
     uint32 sizes[ALLOC_TIMES];
@@ -170,7 +187,7 @@ TEST(PoolGeneralTest, deallocAlmostFullIntTest)
 	}
 	ASSERT_NE(nullptr, pm.alloc(POOL_SIZE));
 }
-TEST(PoolGeneralTest, deallocAlmostFullTest)
+TEST(TEST_NAME, deallocAlmostFullTest)
 {
 	const uint32 POOL_SIZE = 20;
 	const int ALLOC_SIZE = 5;
@@ -194,11 +211,12 @@ TEST(PoolGeneralTest, deallocAlmostFullTest)
 	}
 	ASSERT_NE(nullptr, pm.alloc(POOL_SIZE));
 }
-TEST(PoolGeneralTest, deallocRFullTest)
+#endif
+TEST(TEST_NAME, deallocRFullTest)
 {
 	const uint32 POOL_SIZE = 20;
-	const int ALLOC_SIZE = 5;
-	PoolMemory pm{ POOL_SIZE };
+	const uint32 ALLOC_SIZE = 5;
+	CREATE_POOL(pm, POOL_SIZE, ALLOC_SIZE);
 	const int ALLOC_TIMES = POOL_SIZE / ALLOC_SIZE;
 	void *p[ALLOC_TIMES];
 	for (size_t i = 0; i < ALLOC_TIMES; i++)
@@ -210,12 +228,12 @@ TEST(PoolGeneralTest, deallocRFullTest)
 	{
 		pm.dealloc(p[i]);
 	}
-	ASSERT_NE(nullptr, pm.alloc(POOL_SIZE));
+	ASSERT_NE(nullptr, pm.alloc(ALLOC_SIZE));
 }
-TEST(PoolGeneralTest, allocDeallocAllocFull)
+TEST(TEST_NAME, allocDeallocAllocFull)
 {
 	const uint32 POOL_SIZE = 5;
-	PoolMemory pm{ POOL_SIZE };
+	CREATE_POOL(pm, POOL_SIZE, POOL_SIZE);
 	const int NUM_OF_ALLOC = 3;
 	for (size_t i = 0; i < NUM_OF_ALLOC; i++)
 	{
@@ -229,11 +247,12 @@ TEST(PoolGeneralTest, allocDeallocAllocFull)
 	ASSERT_EQ(nullptr, pm.alloc(POOL_SIZE));
 	pm.dealloc(p1);
 }
-TEST(PoolGeneralTest, smallPool)
+#if IS_FIX_SIZE==0
+TEST(TEST_NAME, smallPool)
 {
     const uint32 POOL_SIZE = 5;
-    PoolMemory pm{ POOL_SIZE };
-    const int ALLOC_SIZE = 1000;
+    const uint32 ALLOC_SIZE = 1000;
+	CREATE_POOL(pm, POOL_SIZE, ALLOC_SIZE);
     ASSERT_EQ(nullptr, pm.alloc(ALLOC_SIZE));
     pm.dealloc(nullptr);
     ASSERT_EQ(nullptr, pm.alloc(ALLOC_SIZE));
@@ -242,11 +261,11 @@ TEST(PoolGeneralTest, smallPool)
     ASSERT_NE(nullptr, p);
     pm.dealloc(p);
 }
-TEST(PoolGeneralTest, fourAllOrder)
+TEST(TEST_NAME, fourAllOrder)
 {
     const uint32 POOL_SIZE = 1000;
-    PoolMemory pm { POOL_SIZE };
     const int ALLOC_TIMES = 5;
+	CREATE_POOL(pm, POOL_SIZE, ALLOC_SIZE);
     void *p[ALLOC_TIMES];
     int sizes[ALLOC_TIMES];
     sizes[0]=550;
@@ -289,3 +308,4 @@ TEST(PoolGeneralTest, fourAllOrder)
         }
     }
 }
+#endif

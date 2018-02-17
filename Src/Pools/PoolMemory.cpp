@@ -2,6 +2,7 @@
 #include <cstdlib>
 #define FREE_VALUE 1
 #define NOT_FREE_VALUE 0
+#define MAX_POOL_SIZE 0xffffffff
 #define resetFlag(val) (val)=0
 #define getIsFree(val)	((val)&FREE_VALUE)
 #define setNotFree(val) (val)&=(!FREE_VALUE)
@@ -33,7 +34,7 @@ void compactAll(void *startMem, void *endMem)
 		}
 	}
 }
-PoolMemory::PoolMemory():PoolMemory(1024*1024*10)
+PoolMemory::PoolMemory():PoolMemory(DEFAULT_POOL_SIZE)
 {
 }
 PoolMemory::PoolMemory(uint32 size) : PoolMemory(size, false)

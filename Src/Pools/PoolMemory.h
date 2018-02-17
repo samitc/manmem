@@ -1,7 +1,7 @@
 #ifndef _POOLMEMORY_H_
 #define _POOLMEMORY_H_
 #include "../../GeneralTypes.h"
-#define MAX_POOL_SIZE 0xffffffff
+#define DEFAULT_POOL_SIZE	1024*1024*10
 class PoolMemory
 {
 public:
