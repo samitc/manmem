@@ -10,11 +10,15 @@ FixPoolMemory::FixPoolMemory(uint32 sizeOfChunk) :FixPoolMemory(DEFAULT_POOL_SIZ
 //TODO optimize
 int calcSize(uint32 size, uint32 sizeOfChunk)
 {
+	if (size%sizeOfChunk == 0)
+	{
+		return size;
+	}
 	return size + (sizeOfChunk - size % sizeOfChunk);
 }
 FixPoolMemory::FixPoolMemory(uint32 size, uint32 sizeOfChunk) : sizeOfChunk(sizeOfChunk > sizeof(void*) ? sizeOfChunk : sizeof(void*)), firstFreeMem(malloc(calcSize(size, this->sizeOfChunk))), lastFreeMem((char*)firstFreeMem + calcSize(size, this->sizeOfChunk) - this->sizeOfChunk), mem(firstFreeMem)
 {
-	char* maxMem = (char*)lastFreeMem + sizeOfChunk;
+	char* maxMem = (char*)lastFreeMem + this->sizeOfChunk;
 	char* curMem = (char*)mem;
 	while (curMem != maxMem)
 	{
@@ -30,14 +34,21 @@ FixPoolMemory::~FixPoolMemory()
 
 void * FixPoolMemory::alloc(uint32 size)
 {
-	if (firstFreeMem == lastFreeMem || size != sizeOfChunk)
+	if (nullptr == firstFreeMem || size > sizeOfChunk)
 	{
 		return nullptr;
 	}
 	else
 	{
 		void *retMem = firstFreeMem;
-		firstFreeMem = *(void**)firstFreeMem;
+		if (firstFreeMem == lastFreeMem)
+		{
+			firstFreeMem = nullptr;
+		}
+		else
+		{
+			firstFreeMem = *(void**)firstFreeMem;
+		}
 		return retMem;
 	}
 }
@@ -48,6 +59,10 @@ void FixPoolMemory::dealloc(void * pointer)
 	{
 		return;
 	}
-	*(void**)lastFreeMem = pointer;
+	*(void**)pointer = lastFreeMem;
 	lastFreeMem = pointer;
+	if (firstFreeMem==nullptr)
+	{
+		firstFreeMem = lastFreeMem;
+	}
 }

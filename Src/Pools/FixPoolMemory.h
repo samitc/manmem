@@ -3,6 +3,7 @@
 #include "../../GeneralTypes.h"
 #define DEFAULT_POOL_SIZE	1024*1024*10
 #define DEFAULT_CHUNK_SIZE	sizeof(void*)
+#define MINIMUM_CHUNK_SIZE	sizeof(void*)
 class FixPoolMemory
 {
 public:
