@@ -77,14 +77,14 @@ TEST(TEST_NAME, sizeTest)
 	ASSERT_NE(nullptr, p);
 	ASSERT_EQ(nullptr, pm.alloc(POOL_SIZE));
 }
-#if IS_FIX_SIZE==0
 TEST(TEST_NAME, sizeBTest)
 {
-	const uint32 POOL_SIZE = 5;
+	const uint32 POOL_SIZE = 11;
 	CREATE_POOL(pm, POOL_SIZE, POOL_SIZE);
 	ASSERT_EQ(nullptr, pm.alloc(POOL_SIZE+1));
 }
-TEST(PoolGeneralTest, allocTest)
+#if IS_FIX_SIZE==0
+TEST(TEST_NAME, allocTest)
 {
 	const uint32 POOL_SIZE = 100;
 	CREATE_POOL(pm, POOL_SIZE, POOL_SIZE);
@@ -93,6 +93,14 @@ TEST(PoolGeneralTest, allocTest)
 	ASSERT_EQ(nullptr, pm.alloc(5));
 }
 #endif
+TEST(TEST_NAME, allocBigTest)
+{
+	const uint32 POOL_SIZE = 100;
+	CREATE_POOL(pm, POOL_SIZE, POOL_SIZE);
+	void * p = pm.alloc(POOL_SIZE);
+	testPointers(&p, 1, POOL_SIZE);
+	ASSERT_EQ(nullptr, pm.alloc(POOL_SIZE*2));
+}
 TEST(TEST_NAME, allocTestFix)
 {
 	const uint32 POOL_SIZE = 100;
@@ -136,7 +144,9 @@ TEST(TEST_NAME, deallocFreeTest)
 	CREATE_POOL(pm, POOL_SIZE, ALLOC_SIZE);
 	void * p = pm.alloc(ALLOC_SIZE);
 	testPointers(&p,1,ALLOC_SIZE);
+#if IS_FIX_SIZE==0
 	ASSERT_EQ(nullptr, pm.alloc(ALLOC_SIZE));
+#endif
 	pm.dealloc(p);
 	ASSERT_NE(nullptr, pm.alloc(ALLOC_SIZE));
 }
